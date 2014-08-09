@@ -18,6 +18,19 @@ struct block_s {
 	uint8_t topleft; /* 左上角坐标 */
 	uint8_t x; /* 宽 */
 	uint8_t y; /* 高 */
+
+	void move_left() {
+		this->topleft -= 1;
+	}
+	void move_right() {
+		this->topleft += 1;
+	}
+	void move_up() {
+		this->topleft -= 0x10;
+	}
+	void move_down() {
+		this->topleft += 0x10;
+	}
 };
 
 #endif
