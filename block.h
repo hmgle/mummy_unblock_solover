@@ -53,6 +53,37 @@ private:
 		uint64_t board_hash;
 		struct board_hash_s *next;
 	} *board_hash_l;
+	struct move_s {
+		int i;
+		enum move_able m;
+		struct move_s *next;
+	} *move_save = NULL;
+
+	void move_save_push(int i, enum move_able m) {
+		struct move_s *n = (struct move_s *)calloc(1, sizeof(*n));
+		assert(n);
+		n->i = i;
+		n->m = m;
+		n->next = move_save;
+		move_save = n;
+	}
+
+	void move_save_pop() {
+		assert(move_save);
+		struct move_s *t = move_save;
+		move_save = move_save->next;
+		free(t);
+	}
+
+	struct move_s *move_save_pop(struct move_s *ms) {
+		assert(move_save && ms);
+		struct move_s *t = move_save;
+		ms->i = move_save->i;
+		ms->m = move_save->m;
+		move_save = move_save->next;
+		free(t);
+		return ms;
+	}
 
 	bool get_board_bit(uint8_t x, uint8_t y) {
 		return this->board_bit & (0x1 << (y * 8 + x));
@@ -187,59 +218,76 @@ public:
 	}
 
 	bool search() {
+		printf("xx: %d\n", __LINE__);
 		if (is_solved()) {
+			struct move_s move_tmp;
 			printf("solved!\n");
-			return true;
+			while (move_save) {
+				move_save_pop(&move_tmp);
+				printf("move: i: %d, %s\n", move_tmp.i,
+					move_tmp.m == MOVE_L ? "L" :
+					(move_tmp.m == MOVE_R ? "R" :
+					 (move_tmp.m == MOVE_U ? "U" :
+					  (move_tmp.m == MOVE_D ? "D" : "error"))));
+			}
+			exit(true);
 		}
 		for (int i = 0; i < n; i++) {
 			int m = can_move(i);
+			printf("%d: i: %d\tm: %d\n", __LINE__, i, m);
 			if (m & MOVE_L) {
 				block[i].move_left();
 				uint64_t ha = get_hash();
 				uint64_t bit = get_board_bit();
+				move_save_push(i, MOVE_L);
 				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
 					this->board_bit = bit;
 					add_hash(bit, ha);
 					search();
-				} else {
-					block[i].move_right();
 				}
+				move_save_pop();
+				block[i].move_right();
 			}
 			if (m & MOVE_R) {
 				block[i].move_right();
 				uint64_t ha = get_hash();
 				uint64_t bit = get_board_bit();
+				move_save_push(i, MOVE_R);
 				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
 					this->board_bit = bit;
 					add_hash(bit, ha);
 					search();
-				} else {
-					block[i].move_left();
 				}
+				move_save_pop();
+				block[i].move_left();
 			}
 			if (m & MOVE_U) {
 				block[i].move_up();
 				uint64_t ha = get_hash();
 				uint64_t bit = get_board_bit();
+				move_save_push(i, MOVE_U);
 				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
 					this->board_bit = bit;
 					add_hash(bit, ha);
+					printf("xxx: %d\n", __LINE__);
 					search();
-				} else {
-					block[i].move_down();
 				}
+				move_save_pop();
+				block[i].move_down();
 			}
 			if (m & MOVE_D) {
+				printf("x: %d\n", __LINE__);
 				block[i].move_down();
 				uint64_t ha = get_hash();
 				uint64_t bit = get_board_bit();
+				move_save_push(i, MOVE_D);
 				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
 					this->board_bit = bit;
 					add_hash(bit, ha);
 					search();
-				} else {
-					block[i].move_up();
 				}
+				move_save_pop();
+				block[i].move_up();
 			}
 		}
 		return false;
