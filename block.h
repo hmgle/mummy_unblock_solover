@@ -18,8 +18,8 @@
 
 struct block_s {
 	uint8_t topleft; /* 左上角坐标 */
-	uint8_t x; /* 宽 */
-	uint8_t y; /* 高 */
+	uint8_t w; /* 宽 */
+	uint8_t h; /* 高 */
 
 	void move_left() {
 		this->topleft -= 1;
@@ -62,19 +62,19 @@ private:
 		int ret = MOVE_N;
 
 		assert(index < n);
-		assert(block[index].x > 0 && block[index].y > 0);
-		assert(block[index].x != block[index].y);
-		if (block[index].x > block[index].y) {
+		assert(block[index].w > 0 && block[index].h > 0);
+		assert(block[index].w != block[index].h);
+		if (block[index].w > block[index].h) {
 			/* 判断是否可向左移动 */
-			if ((block[index].topleft & 0x8) > 1 &&
-			    get_board_bit(block[index].topleft % 8 - 1,
+			if ((block[index].topleft & 0x7) > 1 &&
+			    !get_board_bit(block[index].topleft % 8 - 1,
 					   block[index].topleft / 8)
 			) {
 				ret |= MOVE_L;
 			}
 			/* 判断是否可向右移动 */
-			if ((block[index].topleft & 0x8) + block[index].x < 0x8 &&
-			    get_board_bit(block[index].topleft % 8 + block[index].x,
+			if ((block[index].topleft & 0x7) + block[index].w < 0x8 &&
+			    !get_board_bit(block[index].topleft % 8 + block[index].w,
 					   block[index].topleft / 8)
 			) {
 				ret |= MOVE_R;
@@ -82,15 +82,15 @@ private:
 		} else {
 			/* 判断是否向可上移动 */
 			if ((block[index].topleft / 8) > 1 &&
-			    get_board_bit(block[index].topleft % 8,
+			    !get_board_bit(block[index].topleft % 8,
 				    block[index].topleft / 8 - 1)
 			) {
 				ret |= MOVE_U;
 			}
 			/* 判断是否向可下移动 */
-			if ((block[index].topleft / 8 + block[index].y) < 0x8 &&
-			    get_board_bit(block[index].topleft % 8,
-				    block[index].topleft / 8 + block[index].y)
+			if ((block[index].topleft / 8 + block[index].h) < 0x8 &&
+			    !get_board_bit(block[index].topleft % 8,
+				    block[index].topleft / 8 + block[index].h)
 			) {
 				ret |= MOVE_D;
 			}
@@ -100,21 +100,11 @@ private:
 
 	bool is_solved() {
 		if (block[0].topleft / 8 == 3 &&
-		    block[0].topleft % 8 + block[0].x == 0x7
+		    block[0].topleft % 8 + block[0].w == 0x7
 		) {
 			return true;
 		}
 		return false;
-	}
-public:
-	board_s() {
-		this->n = 12;
-		this->block = (struct block_s *)calloc(n, sizeof(struct block_s));
-	}
-
-	board_s(int n) {
-		this->n = n;
-		this->block = (struct block_s *)calloc(n, sizeof(struct block_s));
 	}
 
 	uint64_t get_hash() {
@@ -128,8 +118,8 @@ public:
 	uint64_t get_board_bit() {
 		uint64_t board_bit = 0;
 		for (int i = 0; i < this->n; i++) {
-			for (int j = 0; j < block[i].x; j++) {
-				for (int k = 0; k < block[i].y; k++) {
+			for (int j = 0; j < block[i].w; j++) {
+				for (int k = 0; k < block[i].h; k++) {
 					board_bit |=
 					 1 << ((block[i].topleft % 8) + j +
 					       (block[i].topleft / 8 + k) * 8);
@@ -139,12 +129,40 @@ public:
 		return board_bit;
 	}
 
-	void init_hase() {
+	void init_hash() {
 		board_hash_l = (struct board_hash_s *)calloc(1, sizeof(*board_hash_l));
 		assert(board_hash_l);
 		board_hash_l->board_bit = get_board_bit();
 		board_hash_l->board_hash = get_hash();
 		board_hash_l->next = NULL;
+	}
+
+public:
+	board_s() {
+		this->n = 12;
+		this->block = (struct block_s *)calloc(n, sizeof(struct block_s));
+	}
+
+	board_s(int n) {
+		this->n = n;
+		this->block = (struct block_s *)calloc(n, sizeof(struct block_s));
+	}
+
+	board_s(struct block_s blockt[]) {
+		this->n = 0;
+		struct block_s *t = &blockt[0];
+		while (t->topleft != 0) {
+			t = &blockt[++this->n];
+		}
+		this->block = (struct block_s *)calloc(this->n,
+				sizeof(struct block_s));
+		for (int i = 0; i < this->n; i++) {
+			this->block[i].topleft = blockt[i].topleft;
+			this->block[i].w = blockt[i].w;
+			this->block[i].h = blockt[i].h;
+		}
+		this->board_bit = get_board_bit();
+		init_hash();
 	}
 
 	bool is_in_hash_l(uint64_t bit, uint64_t hash) {
@@ -170,6 +188,7 @@ public:
 
 	bool search() {
 		if (is_solved()) {
+			printf("solved!\n");
 			return true;
 		}
 		for (int i = 0; i < n; i++) {

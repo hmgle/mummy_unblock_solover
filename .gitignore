@@ -1,6 +1,7 @@
 *.o
 *.d
 test1
+test2
 cscope.in.out
 cscope.out
 cscope.po.out
