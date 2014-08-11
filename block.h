@@ -49,6 +49,11 @@ private:
 	struct block_s *block;
 	int n;
 	uint64_t board_bit; // 位棋盘 8x8
+	struct board_hash_s {
+		uint64_t board_bit;
+		uint64_t board_hash;
+		struct board_hash_s *next;
+	} *board_hash_l;
 
 	bool get_board_bit(uint8_t x, uint8_t y) {
 		return this->board_bit & (0x1 << (y * 8 + x));
@@ -93,6 +98,15 @@ private:
 		}
 		return ret;
 	}
+
+	bool is_solved() {
+		if (block[0].topleft / 8 == 3 &&
+		    block[0].topleft % 8 + block[0].x == 0x7
+		) {
+			return true;
+		}
+		return false;
+	}
 public:
 	board_s() {
 		this->n = 12;
@@ -102,6 +116,115 @@ public:
 	board_s(int n) {
 		this->n = n;
 		this->block = (struct block_s *)calloc(n, sizeof(struct block_s));
+	}
+
+	uint64_t get_hash() {
+		uint64_t board_hash = 0;
+		for (int i = 0; i < this->n; i++) {
+			board_hash += block[i].topleft + i;
+		}
+		return board_hash;
+	}
+
+	uint64_t get_board_bit() {
+		uint64_t board_bit = 0;
+		for (int i = 0; i < this->n; i++) {
+			for (int j = 0; j < block[i].x; j++) {
+				for (int k = 0; k < block[i].y; k++) {
+					board_bit |=
+					 1 << ((block[i].topleft % 8) + j +
+					       (block[i].topleft / 8 + k) * 8);
+				}
+			}
+		}
+		return board_bit;
+	}
+
+	void init_hase() {
+		board_hash_l = (struct board_hash_s *)calloc(1, sizeof(*board_hash_l));
+		assert(board_hash_l);
+		board_hash_l->board_bit = get_board_bit();
+		board_hash_l->board_hash = get_hash();
+		board_hash_l->next = NULL;
+	}
+
+	bool is_in_hash_l(uint64_t bit, uint64_t hash) {
+		struct board_hash_s *t;
+		t = board_hash_l;
+		while (t) {
+			if (bit == t->board_bit && hash == t->board_hash) {
+				return true;
+			}
+			t = t->next;
+		}
+		return false;
+	}
+
+	void add_hash(uint64_t bit, uint64_t hash) {
+		struct board_hash_s *n = (struct board_hash_s *)calloc(1, sizeof(*n));
+		assert(n);
+		n->board_bit = bit;
+		n->board_hash = hash;
+		n->next = board_hash_l;
+		board_hash_l = n;
+	}
+
+	bool search() {
+		if (is_solved()) {
+			return true;
+		}
+		for (int i = 0; i < n; i++) {
+			int m = can_move(i);
+			if (m & MOVE_L) {
+				block[i].move_left();
+				uint64_t ha = get_hash();
+				uint64_t bit = get_board_bit();
+				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
+					this->board_bit = bit;
+					add_hash(bit, ha);
+					search();
+				} else {
+					block[i].move_right();
+				}
+			}
+			if (m & MOVE_R) {
+				block[i].move_right();
+				uint64_t ha = get_hash();
+				uint64_t bit = get_board_bit();
+				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
+					this->board_bit = bit;
+					add_hash(bit, ha);
+					search();
+				} else {
+					block[i].move_left();
+				}
+			}
+			if (m & MOVE_U) {
+				block[i].move_up();
+				uint64_t ha = get_hash();
+				uint64_t bit = get_board_bit();
+				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
+					this->board_bit = bit;
+					add_hash(bit, ha);
+					search();
+				} else {
+					block[i].move_down();
+				}
+			}
+			if (m & MOVE_D) {
+				block[i].move_down();
+				uint64_t ha = get_hash();
+				uint64_t bit = get_board_bit();
+				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
+					this->board_bit = bit;
+					add_hash(bit, ha);
+					search();
+				} else {
+					block[i].move_up();
+				}
+			}
+		}
+		return false;
 	}
 };
 
