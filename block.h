@@ -9,12 +9,11 @@
 /*
  * 棋盘: 6x6, 扩展为 8x8, 有效区域位于中间区域
  *
- * 0x00 0x01 ... 0x0f
- * 0x10 0x11 ... 0x1f
+ * 0x00 0x01 ... 0x07
+ * 0x08 0x09 ... 0x0f
  * .
  * .
  * .
- * 0xf0 0xf1 ... 0xff
  */
 
 struct block_s {
@@ -29,10 +28,10 @@ struct block_s {
 		this->topleft += 1;
 	}
 	void move_up() {
-		this->topleft -= 0x10;
+		this->topleft -= 0x8;
 	}
 	void move_down() {
-		this->topleft += 0x10;
+		this->topleft += 0x8;
 	}
 };
 
