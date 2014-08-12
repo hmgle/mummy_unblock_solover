@@ -4,7 +4,7 @@ int main(int argc, char **argv)
 {
 	struct block_s block[] = {
 		{3*8 + 1, 2, 1},
-		{2*8 + 3, 1, 3},
+		{1*8 + 3, 1, 3},
 		{2*8 + 4, 1, 3},
 		{0, 0, 0},
 	};

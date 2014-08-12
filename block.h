@@ -100,7 +100,7 @@ private:
 				ret |= MOVE_L;
 			}
 			/* 判断是否可向右移动 */
-			if ((block[index].topleft & 0x7) + block[index].w < 0x8 &&
+			if ((block[index].topleft & 0x7) + block[index].w < 0x7 &&
 			    !get_board_bit(block[index].topleft % 8 + block[index].w,
 					   block[index].topleft / 8)
 			) {
@@ -115,7 +115,7 @@ private:
 				ret |= MOVE_U;
 			}
 			/* 判断是否向可下移动 */
-			if ((block[index].topleft / 8 + block[index].h) < 0x8 &&
+			if ((block[index].topleft / 8 + block[index].h) < 0x7 &&
 			    !get_board_bit(block[index].topleft % 8,
 				    block[index].topleft / 8 + block[index].h)
 			) {
@@ -210,16 +210,22 @@ public:
 
 	void search() {
 		if (is_solved()) {
-			struct move_s move_tmp;
+			struct move_s *move_tmp = move_save;
+			int step = 0;
+			printf("=========================\n");
 			printf("solved!\n");
-			while (move_save) {
-				move_save_pop(&move_tmp);
-				printf("move: i: %d, %s\n", move_tmp.i,
-					move_tmp.m == MOVE_L ? "L" :
-					(move_tmp.m == MOVE_R ? "R" :
-					 (move_tmp.m == MOVE_U ? "U" :
-					  (move_tmp.m == MOVE_D ? "D" : "error"))));
+
+			while (move_tmp) {
+				printf("move: i: %d, %s\n", move_tmp->i,
+					move_tmp->m == MOVE_L ? "L" :
+					(move_tmp->m == MOVE_R ? "R" :
+					 (move_tmp->m == MOVE_U ? "U" :
+					  (move_tmp->m == MOVE_D ? "D" : "error"))));
+				move_tmp = move_tmp->next;
+				step++;
 			}
+			printf("==end: %d=======================\n", step);
+			// return;
 			exit(true);
 		}
 		uint64_t ha = get_hash();
@@ -232,6 +238,7 @@ public:
 		}
 		for (int i = 0; i < n; i++) {
 			int m = can_move(i);
+			// printf("%d: i: %d, moveable: %d\n", __LINE__, i, m);
 			if (m & MOVE_L) {
 				block[i].move_left();
 				move_save_push(i, MOVE_L);
