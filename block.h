@@ -44,8 +44,7 @@ enum move_able {
 };
 
 class board_s {
-// private:
-public:
+private:
 	struct block_s *block;
 	int n;
 	uint64_t board_bit; // 位棋盘 8x8
@@ -84,10 +83,6 @@ public:
 		move_save = move_save->next;
 		free(t);
 		return ms;
-	}
-
-	bool get_board_bit(uint8_t x, uint8_t y) {
-		return this->board_bit & ((uint64_t)0x1 << (y * 8 + x));
 	}
 
 	int can_move(int index) {
@@ -161,15 +156,11 @@ public:
 		return board_bit;
 	}
 
-	void init_hash() {
-		board_hash_l = (struct board_hash_s *)calloc(1, sizeof(*board_hash_l));
-		assert(board_hash_l);
-		board_hash_l->board_bit = get_board_bit();
-		board_hash_l->board_hash = get_hash();
-		board_hash_l->next = NULL;
+public:
+	bool get_board_bit(uint8_t x, uint8_t y) {
+		return this->board_bit & ((uint64_t)0x1 << (y * 8 + x));
 	}
 
-public:
 	board_s() {
 		this->n = 12;
 		this->block = (struct block_s *)calloc(n, sizeof(struct block_s));
@@ -194,7 +185,6 @@ public:
 			this->block[i].h = blockt[i].h;
 		}
 		this->board_bit = get_board_bit();
-		// init_hash();
 	}
 
 	bool is_in_hash_l(uint64_t bit, uint64_t hash) {
