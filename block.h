@@ -44,7 +44,8 @@ enum move_able {
 };
 
 class board_s {
-private:
+// private:
+public:
 	struct block_s *block;
 	int n;
 	uint64_t board_bit; // 位棋盘 8x8
@@ -86,7 +87,7 @@ private:
 	}
 
 	bool get_board_bit(uint8_t x, uint8_t y) {
-		return this->board_bit & (0x1 << (y * 8 + x));
+		return this->board_bit & ((uint64_t)0x1 << (y * 8 + x));
 	}
 
 	int can_move(int index) {
@@ -152,7 +153,7 @@ private:
 			for (int j = 0; j < block[i].w; j++) {
 				for (int k = 0; k < block[i].h; k++) {
 					board_bit |=
-					 1 << ((block[i].topleft % 8) + j +
+					 (uint64_t)1 << ((block[i].topleft % 8) + j +
 					       (block[i].topleft / 8 + k) * 8);
 				}
 			}
@@ -193,7 +194,7 @@ public:
 			this->block[i].h = blockt[i].h;
 		}
 		this->board_bit = get_board_bit();
-		init_hash();
+		// init_hash();
 	}
 
 	bool is_in_hash_l(uint64_t bit, uint64_t hash) {
@@ -217,8 +218,7 @@ public:
 		board_hash_l = n;
 	}
 
-	bool search() {
-		printf("xx: %d\n", __LINE__);
+	void search() {
 		if (is_solved()) {
 			struct move_s move_tmp;
 			printf("solved!\n");
@@ -232,65 +232,46 @@ public:
 			}
 			exit(true);
 		}
+		uint64_t ha = get_hash();
+		uint64_t bit = get_board_bit();
+		if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
+			this->board_bit = bit;
+			add_hash(bit, ha);
+		} else {
+			return;
+		}
 		for (int i = 0; i < n; i++) {
 			int m = can_move(i);
-			printf("%d: i: %d\tm: %d\n", __LINE__, i, m);
 			if (m & MOVE_L) {
 				block[i].move_left();
-				uint64_t ha = get_hash();
-				uint64_t bit = get_board_bit();
 				move_save_push(i, MOVE_L);
-				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
-					this->board_bit = bit;
-					add_hash(bit, ha);
-					search();
-				}
+				search();
 				move_save_pop();
 				block[i].move_right();
 			}
 			if (m & MOVE_R) {
 				block[i].move_right();
-				uint64_t ha = get_hash();
-				uint64_t bit = get_board_bit();
 				move_save_push(i, MOVE_R);
-				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
-					this->board_bit = bit;
-					add_hash(bit, ha);
-					search();
-				}
+				search();
 				move_save_pop();
 				block[i].move_left();
 			}
 			if (m & MOVE_U) {
 				block[i].move_up();
-				uint64_t ha = get_hash();
-				uint64_t bit = get_board_bit();
 				move_save_push(i, MOVE_U);
-				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
-					this->board_bit = bit;
-					add_hash(bit, ha);
-					printf("xxx: %d\n", __LINE__);
-					search();
-				}
+				search();
 				move_save_pop();
 				block[i].move_down();
 			}
 			if (m & MOVE_D) {
-				printf("x: %d\n", __LINE__);
 				block[i].move_down();
-				uint64_t ha = get_hash();
-				uint64_t bit = get_board_bit();
 				move_save_push(i, MOVE_D);
-				if (!is_in_hash_l(bit, ha)) { // 第一次出现局面
-					this->board_bit = bit;
-					add_hash(bit, ha);
-					search();
-				}
+				search();
 				move_save_pop();
 				block[i].move_up();
 			}
 		}
-		return false;
+		return;
 	}
 };
 
