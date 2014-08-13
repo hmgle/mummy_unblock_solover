@@ -1,6 +1,6 @@
 CPPFLAGS += -Wall
 
-TARGET = test1 test2
+TARGET = test1 test2 unblock
 all:: $(TARGET)
 
 test1: test1.o

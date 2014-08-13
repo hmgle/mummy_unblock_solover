@@ -2,6 +2,7 @@
 *.d
 test1
 test2
+unblock
 cscope.in.out
 cscope.out
 cscope.po.out
